@@ -5,6 +5,11 @@ pipeline {
     DOCKER_BUILDKIT = "0"
     IMAGE = "hemanthr2002/frontend-app"
   }
+  stage('Clean Workspace') {
+  steps {
+    cleanWs()
+  }
+}
 
   stages {
     stage('Checkout') {
