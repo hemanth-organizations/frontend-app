@@ -2,16 +2,17 @@ pipeline {
   agent any
 
   environment {
-    DOCKER_BUILDKIT = "0"
     IMAGE = "hemanthr2002/frontend-app"
   }
-  stage('Clean Workspace') {
-  steps {
-    cleanWs()
-  }
-}
 
   stages {
+
+    stage('Clean Workspace') {
+      steps {
+        cleanWs()
+      }
+    }
+
     stage('Checkout') {
       steps {
         git branch: env.BRANCH_NAME ?: 'develop',
@@ -23,19 +24,19 @@ pipeline {
     stage('Build') {
       steps {
         sh '''
-        SHORT=$(echo $GIT_COMMIT | cut -c1-8)
-        echo "Using short commit ID: $SHORT"
-        docker build -t ${IMAGE}:$SHORT .
-        docker tag ${IMAGE}:$SHORT ${IMAGE}:latest
+          SHORT=$(echo $GIT_COMMIT | cut -c1-8)
+          echo "Using short commit ID: $SHORT"
+          docker build -t ${IMAGE}:$SHORT .
+          docker tag ${IMAGE}:$SHORT ${IMAGE}:latest
         '''
       }
     }
 
-    stage('Run (for smoke test)') {
+    stage('Run (Smoke Test)') {
       steps {
         sh '''
-        docker rm -f cicd-run || true
-        docker run -d --name cicd-run -p 3002:3000 ${IMAGE}:latest
+          docker rm -f cicd-run || true
+          docker run -d --name cicd-run -p 3002:3000 ${IMAGE}:latest
         '''
       }
     }
@@ -44,8 +45,8 @@ pipeline {
       steps {
         withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
           sh '''
-          echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-          docker push ${IMAGE}:latest
+            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+            docker push ${IMAGE}:latest
           '''
         }
       }
