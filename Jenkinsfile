@@ -2,6 +2,7 @@ pipeline {
   agent any
 
   environment {
+    DOCKER_BUILDKIT = "0"
     IMAGE = "hemanthr2002/frontend-app"
   }
 
@@ -17,9 +18,8 @@ pipeline {
     stage('Build') {
       steps {
         sh '''
-        SHORT=$(echo "$GIT_COMMIT" | cut -c1-8)
+        SHORT=$(echo $GIT_COMMIT | cut -c1-8)
         echo "Using short commit ID: $SHORT"
-
         docker build -t ${IMAGE}:$SHORT .
         docker tag ${IMAGE}:$SHORT ${IMAGE}:latest
         '''
