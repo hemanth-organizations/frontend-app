@@ -30,7 +30,7 @@ pipeline {
       steps {
         sh '''
         docker rm -f cicd-run || true
-        docker run -d --name cicd-run -p 3001:3000 ${IMAGE}:latest
+        docker run -d --name cicd-run -p 3002:3000 ${IMAGE}:latest
         '''
       }
     }
