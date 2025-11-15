@@ -2,7 +2,8 @@ pipeline {
   agent any
 
   environment {
-    IMAGE = "hemanthr2002/frontend-app"   // change per repo
+    DOCKER_BUILDKIT = "0"
+    IMAGE = "hemanthr2002/frontend-app"
   }
 
   stages {
@@ -16,37 +17,39 @@ pipeline {
 
     stage('Build') {
       steps {
-        sh 'docker build -t ${IMAGE}:${GIT_COMMIT::8} .'
-        sh 'docker tag ${IMAGE}:${GIT_COMMIT::8} ${IMAGE}:latest'
+        sh '''
+        SHORT=$(echo $GIT_COMMIT | cut -c1-8)
+        echo "Using short commit ID: $SHORT"
+        docker build -t ${IMAGE}:$SHORT .
+        docker tag ${IMAGE}:$SHORT ${IMAGE}:latest
+        '''
       }
     }
 
     stage('Run (for smoke test)') {
       steps {
-        sh 'docker rm -f cicd-run || true'
-        sh 'docker run -d --name cicd-run -p 3001:3000 ${IMAGE}:latest'
-        // optionally add smoke test curl commands here
+        sh '''
+        docker rm -f cicd-run || true
+        docker run -d --name cicd-run -p 3002:3000 ${IMAGE}:latest
+        '''
       }
     }
 
     stage('Push') {
       steps {
         withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-          sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
-          sh 'docker push ${IMAGE}:latest'
+          sh '''
+          echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+          docker push ${IMAGE}:latest
+          '''
         }
       }
     }
   }
 
   post {
-    success { echo "Build & push OK" }
-    failure {
-      echo "Failed — cleaning up"
-      sh 'docker rm -f cicd-run || true'
-    }
     always {
-      sh 'docker rm -f cicd-run || true'  // cleanup
+      sh 'docker rm -f cicd-run || true'
     }
   }
 }
